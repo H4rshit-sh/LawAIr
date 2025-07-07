@@ -27,7 +27,7 @@ vectorstore = FAISS.from_documents(chunks, embedding)
 vectorstore.save_local("vectorstore")
 
 # API setup
-genai.configure(api_key=("AIzaSyBSJtBrvboEoXGBL5U6eZHIQLy_r1r-ka8"))
+genai.configure(api_key=("Your api key here"))
 
 vectorstore = FAISS.load_local("vectorstore", embedding , allow_dangerous_deserialization=True)
 
