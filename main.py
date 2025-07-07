@@ -1,58 +1,54 @@
-# libraries
-import json
-import os
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import streamlit as st
+import google.generativeai as genai
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-import google.generativeai as genai
 
-with open('ipc.json','r', encoding='utf-8') as f:
-    ipc = json.load(f)
-
-
-# create list of documents
-documents = []
-
-for sec in ipc:
-    text = f"Section {sec['Section']}: {sec['section_title']} \n {sec['section_desc']}"
-    documents.append(Document(page_content=text, metadata={'section': sec['Section']}))
-
-splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-chunks = splitter.split_documents(documents)
-
+# Load FAISS index
 embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-vectorstore = FAISS.from_documents(chunks, embedding)
+vectorstore = FAISS.load_local("vectorstore", embedding, allow_dangerous_deserialization=True)
 
-vectorstore.save_local("vectorstore")
+# Gemini setup
+genai.configure(api_key="AIzaSyBSJtBrvboEoXGBL5U6eZHIQLy_r1r-ka8")
+model = genai.GenerativeModel("gemini-2.5-pro") 
 
-# API setup
-genai.configure(api_key=("Your api key here"))
+# Streamlit UI config
+st.set_page_config(page_title="LawAIr", page_icon="⚖️")
+st.title("⚖️ LawAIr – Indian Legal Assistant")
+st.markdown("Ask questions from Indian Penal Code (IPC) and get answers.")
 
-vectorstore = FAISS.load_local("vectorstore", embedding , allow_dangerous_deserialization=True)
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-query = input("\n Enter your legal question: ").strip()
+# Display chat history
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-result = vectorstore.similarity_search(query)
+# Input box
+query = st.chat_input("Ask your question...")
 
-context = "\n\n".join([r.page_content for r in result])
+if query:
+    st.chat_message("user").markdown(query)
+    st.session_state.messages.append({"role": "user", "content": query})
 
-prompt = f"""
-you are a AI lawyer, trained on Indian Penal Code (IPC). Based on the following sections of law, answer the user's question clearly and concisely
+    with st.chat_message("Assistant"):
+        with st.spinner("🤖 Thinking..."):
+            docs = vectorstore.similarity_search(query)
+            context = "\n\n".join([doc.page_content for doc in docs])
 
-Law Sections: {context}
+            prompt = f"""
+You are an AI legal assistant, Lawyer trained on the Indian Penal Code (IPC).
+Use the following legal sections to answer clearly and correctly.
+
+Context:
+{context}
+
 Question: {query}
 Answer:
+
 """
-model = genai.GenerativeModel("gemini-2.5-pro")
+            response = model.generate_content(prompt)
+            answer = response.text.strip()
 
-print("\n🤖 Thinking...\n")
-
-response = model.generate_content(prompt, stream=True)
-
-print("\n🤖 LawAIr:\n")
-for chunk in response:
-    print(chunk.text, end="", flush=True)
-
-    print()
-
+            st.markdown(answer)
+            st.session_state.messages.append({"role": "Assistant", "content": answer})
