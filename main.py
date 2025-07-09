@@ -14,7 +14,7 @@ model = genai.GenerativeModel("gemini-2.5-pro")
 # Streamlit UI config
 st.set_page_config(page_title="LawAIr", page_icon="⚖️")
 st.title("⚖️ LawAIr – Indian Legal Assistant")
-st.markdown("Ask questions from Indian Penal Code (IPC) and get answers.")
+st.markdown("Get your Legal asistance from LawAIr, an expert AI legal assistant trained on Indian law.\n\n")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -32,13 +32,33 @@ if query:
     st.session_state.messages.append({"role": "user", "content": query})
 
     with st.chat_message("Assistant"):
-        with st.spinner("🤖 Thinking..."):
+        with st.spinner("Thinking..."):
             docs = vectorstore.similarity_search(query)
-            context = "\n\n".join([doc.page_content for doc in docs])
+            context_blocks = []
+            for doc in docs:
+                section = doc.metadata.get("section", "N/A")
+                title = doc.metadata.get("title", "No Title")
+                act = doc.metadata.get("act", "Unknown Act")
+                context_blocks.append(f"{act}\n Section {section} – {title}\n\n{doc.page_content}")
+
+            context = "\n\n---\n\n".join(context_blocks)
 
             prompt = f"""
-You are an AI legal assistant, Lawyer trained on the Indian Penal Code (IPC).
-Use the following legal sections to answer clearly and correctly.
+You are an expert AI legal assistant trained on Indian law.
+
+Based on the following legal sections, answer the user's legal query in a structured, clear, and concise way.
+
+If some sections do not match the question, politely exclude them from your answer.
+only include the relevent Act and Section number.
+
+Use this format:
+---
+📜 Section:
+Section <number> – <section title> : <act>
+
+💡 Explanation:
+<explanation here>
+---
 
 Context:
 {context}
