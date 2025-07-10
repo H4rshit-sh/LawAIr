@@ -8,11 +8,54 @@ embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L
 vectorstore = FAISS.load_local("vectorstore", embedding, allow_dangerous_deserialization=True)
 
 # Gemini setup
-genai.configure(api_key="AIzaSyBSJtBrvboEoXGBL5U6eZHIQLy_r1r-ka8")
+genai.configure(api_key="YOUR API KEY")
 model = genai.GenerativeModel("gemini-2.5-pro") 
 
 # Streamlit UI config
 st.set_page_config(page_title="LawAIr", page_icon="⚖️")
+st.markdown("""
+    <style>
+        html, body, [class*="css"]  {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .stChatMessage {
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            margin: 0.5rem 0;
+            max-width: 100%;
+        }
+
+        .stMarkdown {
+            font-size: 15px !important;
+            white-space: pre-wrap;
+        }
+
+        .block-container {
+            padding: 1rem;
+        }
+
+        @media only screen and (max-width: 768px) {
+            html, body {
+                font-size: 15px;
+                padding: 0.5rem;
+            }
+
+            .stChatMessage {
+                font-size: 14px;
+            }
+
+            .block-container {
+                padding: 0.5rem !important;
+            }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("⚖️ LawAIr – Indian Legal Assistant")
 st.markdown("Get your Legal asistance from LawAIr, an expert AI legal assistant trained on Indian law.\n\n")
 
